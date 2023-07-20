@@ -3,44 +3,34 @@ const router = express.Router();
 const Producto = require('../models/mg_productos');
 require('dotenv').config(); // Cargar las variables de entorno desde .env
 
+const neo4j = require('neo4j-driver');
+const driver = neo4j.driver('bolt://localhost:7687', neo4j.auth.basic('neo4j', 'password'),);
+
 router.get("/purchase", async (req, res) => {
     try {
-        return res.json([    // FORMATO QUE ESPERA EL FRONTEND
-            {   
-                name: "Producto 1 desde el Back",
-                category: "Categoria 1",
-                price: 199
-            },
-            {
-                name: "Producto 2 desde el Back",
-                category: "Categoria 2",
-                price: 299
-            },
-            {
-                name: "Producto 3 desde el Back",
-                category: "Categoria 3",
-                price: 399
-            }
-        ]) 
-        const compras = await Compras.findOne(); 
-        if (!compras) {
-        return res.json([]);
-        }
-        let compras_json = [];
-        for (let i = 0; i<compras.items.length; i++){
-            const item = compras.items[i];
-            const product = await Producto.findById(item.product);
+        const session = driver.session('neo4j');
+        const result = await session.run(  `MATCH (U:Usuario{name:'Testing_User'})-[:Bought]->(p:Product)
+                                        WITH COLLECT(p.category) AS boughtCategories
+                                        UNWIND boughtCategories AS category
+                                        MATCH (recommendation :Product{category: category})
+                                        RETURN recommendation;`)
 
-            const product_json = {
-                name: product.name,
-                category: product.category,
-                quantity: item.quantity,
-                price: product.price
+        const recom = result.records.map(i=>i.get('recommendation').properties)
+
+        let res_json = [];
+        for (let i = 0; i<recom.length; i++){
+            if (i == 5){
+                break;
             }
-            compras_json.push(product_json);
+            json = {
+                name: recom[i].name,
+                category: recom[i].category,
+                price: recom[i].price.low
+
+            }
+            res_json.push(json);
         }
-        compras_json; /// JSON CON LAS COMPRASS!!!!!!!!!!!
-        
+        return res.json(res_json);
       } catch (error) {
         console.error('Error getting products', error);
         return res.sendStatus(400);
@@ -50,44 +40,29 @@ router.get("/purchase", async (req, res) => {
 
 router.get("/cart", async (req, res) => {
     try {
-        return res.json([ // FORMATO QUE ESPERA EL FRONTEND
-            {
-                name: "Producto 1 desde el Back",
-                category: "Categoria 1",
-                price: 199
-            },
-            {
-                name: "Producto 2 desde el Back",
-                category: "Categoria 2",
-                price: 299
-            },
-            {
-                name: "Producto 3 desde el Back",
-                category: "Categoria 3",
-                price: 399
-            }
-        ]) 
-        const carrito = await Carrito.findOne(); 
-        if (!carrito) {
-        return res.json([]);
-        }
-        let carrito_json = [];
-        for (let i = 0; i<carrito.items.length; i++){
-            const item = carrito.items[i];
-            const product = await Producto.findById(item.product);
+        const session = driver.session('neo4j');
+        const result = await session.run(  `MATCH (U:Usuario{name:'Testing_User'})-[:Liked]->(p:Product)
+                                        WITH COLLECT(p.category) AS boughtCategories
+                                        UNWIND boughtCategories AS category
+                                        MATCH (recommendation :Product{category: category})
+                                        RETURN recommendation;`)
 
-            const product_json = {
-                name: product.name,
-                price: product.price,
-                category: product.category,
-                description: product.description,
-                specs: product.specs,
-                quantity: item.quantity
+        const recom = result.records.map(i=>i.get('recommendation').properties)
+
+        let res_json = [];
+        for (let i = 0; i<recom.length; i++){
+            if (i == 5){
+                break;
             }
-            
-            carrito_json.push(product_json);
-        carrito_json; ////// JSON CON LOS PRODUCTOS DEL CARRITO!
-    }
+            json = {
+                name: recom[i].name,
+                category: recom[i].category,
+                price: recom[i].price.low
+
+            }
+            res_json.push(json);
+        }
+        return res.json(res_json);
       } catch (error) {
         console.error('Error getting products', error);
         return res.sendStatus(400);

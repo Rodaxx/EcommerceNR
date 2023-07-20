@@ -4,14 +4,41 @@ const Carrito = require('../models/mg_carrito');
 const Producto = require('../models/mg_productos'); 
 const Compras = require('../models/mg_compras')
 
+const neo4j = require('neo4j-driver');
+const driver = neo4j.driver('bolt://localhost:7687', neo4j.auth.basic('neo4j', 'password'),);
+
+const createRelation = async (productname,quantity) =>{
+  const session = driver.session('neo4j');
+  fecha_compra = '2001-01-01';
+  client = 'Testing_User';
+  const result = await session.run(`
+  MATCH (U:Usuario{name: $client}), (P:Product{name: $productname})
+  CREATE (U)-[B:Bought{quantity: $quantity, fecha_compra: $fecha_compra}]->(P)
+  `, {
+    client: client,
+    productname: productname,
+    quantity: quantity,
+    fecha_compra: fecha_compra
+  });};
+
+const createRelationCart = async (productname) =>{
+  const session = driver.session('neo4j');
+  const result = await session.run(`
+  MATCH(U:Usuario{name:'Testing_User'}),(P:Product{name:'${productname}'})CREATE (U)-[:Liked]->(P)
+  `, {
+    productname: productname,
+  });};
+
 router.post('/add', async (req, res) => {
   const { productName, quantity } = req.body; 
 
   try {
     const producto = await Producto.findOne({ name: productName });
     if (!producto) {
-      return res.status(404).json({ error: 'Producto no encontrado' });
+      return res.status(404).json({ error: 'Producto no encontrado' })
     }
+
+    await createRelationCart(producto.name);
 
     const newItem = {
       product: producto._id,
@@ -82,6 +109,7 @@ router.get('/confirm', async (req, res) => {
           (item) => item.product.toString() === productId
         );
 
+        createRelation(product.name, cantidad);
         if (itemCompraExistente) {
           itemCompraExistente.quantity += cantidad;
         } else {
@@ -90,6 +118,7 @@ router.get('/confirm', async (req, res) => {
             quantity: cantidad,
           };
           compraExistente.items.push(itemCompra);
+
         }
       }
     }
