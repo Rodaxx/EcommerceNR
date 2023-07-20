@@ -2,11 +2,36 @@ version: '3.8'
 services:
   mongodb:
     image: mongo
-    container_name: ecommerce-mongodb
+    container_name: EcommerceNR-MongoDB
     ports:
       - "27017:27017"
     volumes:
       - ecommerce-mongodb:/data/db
-    command: "--noauth"  # Desactivar la autenticación (solo para pruebas)
+    command: "--noauth"
+  neo4j:
+    image: neo4j:latest
+    container_name: EcommerceNR-Neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+      - "7473:7473"
+    environment:
+      - NEO4J_AUTH=neo4j/password
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: EcommerceNR-Backend
+    ports:
+      - "2000:2000"
+    environment:
+      - MONGODB_URI=mongodb://EcommerceNR-MongoDB:27017/ecommerce
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: EcommerceNR-Frontend
+    ports:
+      - "3000:3000"
 volumes:
   ecommerce-mongodb:
