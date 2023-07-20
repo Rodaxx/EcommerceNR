@@ -1,10 +1,10 @@
 # EcommerceNR
-##FRONTEND
-##cd ./frontend
-##npm install
-##npm start
+FRONTEND
+cd ./frontend
+npm install
+npm start
 
-##BACKEND
+\n BACKEND
 ##cd ./backend
 ##npm install
 ##node index.js
